@@ -1,0 +1,65 @@
+ARG IMG_NAME=${$IMG_NAME}
+ARG IMG_TAG=${$IMG_TAG}
+
+FROM ${IMG_NAME}:${IMG_TAG}
+
+ARG IMG_NAME=${IMG_NAME}
+ARG IMG_TAG=${IMG_TAG}
+ARG UID=${UID}
+ARG GID=${GID}
+ARG USERNAME=${USERNAME}
+ARG COMMENT=${COMMENT}
+ARG SHELL=${SHELL}
+ARG TIMEZONE=${TIMEZONE}
+ARG SDK_VERSION=${SDK_VERSION}
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV TZ="${TIMEZONE}"
+
+RUN apt-get -qq -y update && apt-get -qq -y upgrade \
+    && apt-get -qq -y install \
+        vim \
+        curl \
+        wget \
+        apt-transport-https \
+        sudo \
+        git \
+        tzdata \
+        bash \
+        zip unzip \
+        libc6 \
+        libgcc-s1 \
+        libgssapi-krb5-2 \
+        libicu76 \
+        libssl3 \
+        libstdc++6 \
+        zlib1g \
+        gpg \
+        iproute2 \
+    && ln -fs /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata
+
+COPY ${IMG_NAME}-${IMG_TAG}-packages-microsoft-prod.deb /tmp/packages-microsoft-prod.deb
+
+RUN dpkg -i /tmp/packages-microsoft-prod.deb \
+    && rm /tmp/packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get -qq -y install dotnet-sdk-${SDK_VERSION}
+
+# Create developer user
+RUN addgroup --gid ${GID} ${USERNAME} \
+    && adduser --uid ${UID} --gid ${GID} --disabled-password --gecos "${COMMENT}" --shell ${SHELL} ${USERNAME} \
+    && usermod -aG sudo ${USERNAME} \
+    && echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/${USERNAME}
+
+        
+USER ${USERNAME}
+
+# Installation de EF Core Global Tool
+RUN dotnet tool install --global dotnet-ef --version ${SDK_VERSION}.*
+
+# On s'assure que le PATH est chargé pour les sessions interactives
+RUN echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> /home/${USERNAME}/.bashrc
+
+WORKDIR /home/${USERNAME}

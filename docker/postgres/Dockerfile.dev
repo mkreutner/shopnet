@@ -1,0 +1,24 @@
+ARG IMG_NAME=${ING_NAME:-postgres}
+ARG IMG_TAG=${IMG_TAG:-latest}
+
+FROM ${IMG_NAME}:${IMG_TAG}
+
+ARG IMG_NAME=${ING_NAME:-postgres}
+ARG IMG_TAG=${IMG_TAG:-latest}
+ARG TIMEZONE=${TIMEZONE:-UTC}
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV TZ="${TIMEZONE}"
+
+RUN apt-get -qq -y update && apt-get -qq -y upgrade \
+    && apt-get -qq -y install \
+        vim \
+        curl \
+        wget \
+        apt-transport-https \
+        sudo \
+        git \
+        tzdata \
+    && ln -fs /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata

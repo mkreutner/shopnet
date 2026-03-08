@@ -1,0 +1,152 @@
+services:
+
+  proxy:
+    image: nginx:alpine
+    container_name: shopnet_proxy
+    hostname: proxy
+    restart: no # unless-stopped
+    volumes:
+      - ./docker/proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: shopnet_ngrok
+    hostname: ngrok
+    restart: no # unless-stopped
+    command:
+      - "http"
+      - "proxy:80" # On pointe vers le service proxy Nginx
+      - "--host-header=rewrite" # Réécrit le header host pour que Nginx ne soit pas perdu
+      - "--url=${NGROK_URL}"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN} # À mettre dans le .env
+    depends_on:
+      - proxy
+    ports:
+      - "4040:4040" # Interface de debug ngrok (très utile !)
+
+  # API 
+  api:
+    build:
+      context: ./docker/api
+      dockerfile: Dockerfile-os-${API_IMG_NAME}-${API_IMG_TAG}-sdk-${API_SDK_VERSION}.${ENVIRONMENT}
+      args:
+        - IMG_NAME=${API_IMG_NAME}
+        - IMG_TAG=${API_IMG_TAG}
+        - UID=${UID}
+        - GID=${GID}
+        - USERNAME=${USERNAME}
+        - COMMENT=${COMMENT}
+        - SHELL=${SHELL}
+        - TIMEZONE=${TIMEZONE}
+        - SDK_VERSION=${API_SDK_VERSION}
+    container_name: shopnet_api
+    hostname: api
+    restart: ${DOCKER_RESTART_POLICY}
+    tty: true
+    stdin_open: true
+    # ports:
+    #   - ${API_HOST_HTTP_PORT}:${API_GUEST_HTTP_PORT}
+    #   - ${API_HOST_HTTPS_PORT}:${API_GUEST_HTTPS_PORT}
+    volumes:
+      - "./sources/api:/home/${USERNAME}"
+      #- "./temp/api:/home/${USERNAME}"
+      - "api_data:/usr/share/dotnet/sdk"
+      - "./docker/api/entrypoint.sh:/usr/local/bin/entrypoint.sh"
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    command: ["dotnet", "watch", "run", "--no-launch-profile"]
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true # Important pour le proxy=value
+      - ASPNETCORE_FORWARDEDHEADERS_RESTRICTEDINTERNALS=false # Pour accepter les headers du proxy
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__MainDatabase=Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__LoggingDatabase=Host=mysql;Database=${MYSQL_DATABASE};Username=${MYSQL_USER};Password=${MYSQL_PASSWORD}
+      - Security__SecretKey=MaSuperCleTresLongueEtSecurisee32!
+      - AdminSettings__AdminUserName=${API_ADMIN_USERNAME}
+      - AdminSettings__AdminEmail=${API_ADMIN_EMAIL}
+      - AdminSettings__AdminFirstName=${API_ADMIN_FIRSTNAME}
+      - AdminSettings__AdminLastName=${API_ADMIN_LASTNAME}
+      - AdminSettings__AdminPassword=${API_ADMIN_PASSWORD}
+    user: "${USERNAME}"
+    working_dir: "/home/${USERNAME}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+  # bo:
+
+  # web:
+
+  # postgres:
+  postgres:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile.${ENVIRONMENT}
+      args:
+        - IMG_NAME=${POSTGRES_IMG_NAME}
+        - IMG_TAG=${POSTGRES_IMG_TAG}
+        - TIMEZONE=${TIMEZONE}
+    container_name: shopnet_postgres
+    hostname: postgres
+    restart: ${DOCKER_RESTART_POLICY}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+
+  # mysql:
+  mysql:
+    build:
+      context: ./docker/mysql
+      dockerfile: Dockerfile.${ENVIRONMENT}
+      args:
+        - IMG_NAME=${MYSQL_IMG_NAME}
+        - IMG_TAG=${MYSQL_IMG_TAG}
+        - TIMEZONE=${TIMEZONE}
+    container_name: shopnet_mysql
+    hostname: mysql
+    restart: ${DOCKER_RESTART_POLICY}
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+        # test: ["CMD-SHELL", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "$$MYSQL_USER", "-p", "$$MYSQL_PASSWORD"]
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        start_period: 40s
+        interval: 10s
+        timeout: 5s
+        retries: 10
+
+volumes:
+  postgres_data:
+    name: shopnet_postgres_data
+  mysql_data:
+    name: shopnet_mysql_data
+  api_data:
+    name: shopnet_api_data
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./data/api/usr/share/dotnet/sdk"
