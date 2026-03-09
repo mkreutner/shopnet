@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ShopNetApi.Models.Entities;
@@ -15,6 +16,7 @@ public class SystemController : ControllerBase
         _roleManager = roleManager;
     }
 
+    [Authorize(Roles = "Administrator")]
     [HttpGet("roles")]
     public IActionResult GetRoles()
     {

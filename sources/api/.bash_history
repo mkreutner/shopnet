@@ -20,3 +20,4 @@ dotnet ef --help
 export PATH="$PATH:$USER/.dotnet/tools/"
 dotnet ef --help
 vi .bashrc 
+curl http://localhost:5000/api/system/roles
