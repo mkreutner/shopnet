@@ -21,3 +21,7 @@ export PATH="$PATH:$USER/.dotnet/tools/"
 dotnet ef --help
 vi .bashrc 
 curl http://localhost:5000/api/system/roles
+dotnet ef migrations add AddBrandsTable
+dotnet ef database update
+dotnet ef migrations add AddCategoriesTable
+dotnet ef database update

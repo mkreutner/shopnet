@@ -2,21 +2,37 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Models.Common;
 using ShopNetApi.Interfaces;
 
 namespace ShopNetApi.Data;
 
 public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
-    public MainDbContext(DbContextOptions<MainDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public MainDbContext(DbContextOptions<MainDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options) { 
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public DbSet<Brand> Brands { get; set; }
+    public DbSet<Category> Categories { get; set; }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker.Entries<IAuditable>();
+        var userId = _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "System";
+
         foreach (var entry in entries)
         {
-            if (entry.State == EntityState.Added) entry.Entity.CreatedAt = DateTime.UtcNow;
-            if (entry.State == EntityState.Modified) entry.Entity.UpdatedAt = DateTime.UtcNow;
+            if (entry.State == EntityState.Added) {
+                entry.Entity.CreatedAt = DateTime.UtcNow;
+                entry.Entity.CreatedBy = userId;
+            }
+            if (entry.State == EntityState.Modified) {
+                entry.Entity.UpdatedAt = DateTime.UtcNow;
+                entry.Entity.UpdatedBy = userId;
+            }
         }
         return base.SaveChangesAsync(cancellationToken);
     }

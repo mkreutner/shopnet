@@ -49,6 +49,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddControllers();
 
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // Vérification des arguments CLI au lancement
