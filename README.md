@@ -116,7 +116,7 @@ docker exec -it shopnet_postgres psql -U shopnet -d shopnet -c "TRUNCATE TABLE \
 docker exec -it shopnet_postgres psql -U shopnet -d shopnet -c "TRUNCATE TABLE \"UserRoles\" CASCADE;"
 
 # Crée la structure initiale (Users, Roles, Brands)
-docker exec -it shopnet_api ~/.dotnet/tools/dotnet-ef migrations add InitialCreate
+docker exec -it shopnet_api ~/.dotnet/tools/dotnet-ef migrations add InitialCreate --output-dir Data/Migrations
 
 # Applique la structure à la base Postgres dans Docker
 docker exec -it shopnet_api ~/.dotnet/tools/dotnet-ef database update
