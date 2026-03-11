@@ -25,3 +25,5 @@ dotnet ef migrations add AddBrandsTable
 dotnet ef database update
 dotnet ef migrations add AddCategoriesTable
 dotnet ef database update
+dotnet ef migrations add AddSupplierAndWarehouse
+dotnet ef migrations remove

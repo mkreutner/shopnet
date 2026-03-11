@@ -20,6 +20,10 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
     public DbSet<Category> Categories { get; set; }
     public DbSet<Tva> Tvas { get; set; }
     public DbSet<Address> Addresses { get; set; }
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<SupplierWarehouse> SupplierWarehouses => Set<SupplierWarehouse>();
+    public DbSet<Contact> Contacts => Set<Contact>();
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -43,6 +47,7 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
         builder.Entity<ApplicationUser>(entity => entity.ToTable("users"));
         builder.Entity<IdentityRole<Guid>>(entity => entity.ToTable("roles"));
         // Ajout pour renommer les tables de jointure
@@ -51,5 +56,15 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
         builder.Entity<IdentityUserClaim<Guid>>(entity => entity.ToTable("user_claims"));
         builder.Entity<IdentityUserLogin<Guid>>(entity => entity.ToTable("user_logins"));
         builder.Entity<IdentityUserToken<Guid>>(entity => entity.ToTable("user_tokens"));
+        builder.Entity<SupplierWarehouse>()
+            .HasKey(sw => new { sw.SupplierId, sw.WarehouseId });
+        builder.Entity<SupplierWarehouse>()
+            .HasOne(sw => sw.Supplier)
+            .WithMany(s => s.SupplierWarehouses)
+            .HasForeignKey(sw => sw.SupplierId);
+        builder.Entity<SupplierWarehouse>()
+            .HasOne(sw => sw.Warehouse)
+            .WithMany(w => w.SupplierWarehouses)
+            .HasForeignKey(sw => sw.WarehouseId);
     }
 }
