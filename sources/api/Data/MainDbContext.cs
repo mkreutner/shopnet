@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Models.Enums;
 using ShopNetApi.Models.Common;
 using ShopNetApi.Interfaces;
 
@@ -17,6 +18,8 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
 
     public DbSet<Brand> Brands { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<Tva> Tvas { get; set; }
+    public DbSet<Address> Addresses { get; set; }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
