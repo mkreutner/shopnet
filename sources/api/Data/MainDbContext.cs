@@ -21,18 +21,19 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
     public DbSet<Tva> Tvas => Set<Tva>();
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
-    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<SupplierWarehouse> SupplierWarehouses => Set<SupplierWarehouse>();
     public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<Product> Products { get; set; }
+    public DbSet<ProductStock> ProductStocks { get; set; }
+    public DbSet<Warehouse> Warehouses { get; set; }
+    public DbSet<StockMovement> StockMovements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        // 1. Appeler la base en PREMIER pour initialiser les conventions Identity
         base.OnModelCreating(builder);
 
-        // 1. Applique automatiquement toutes les configurations dans le dossier Data/Configurations
-        builder.ApplyConfigurationsFromAssembly(typeof(MainDbContext).Assembly);
-
-        // 2. Configurations Identity spécifiques
+        // 2. Maintenant, appliquer les changements de noms (ils ne seront plus écrasés)
         builder.Entity<ApplicationUser>(entity => entity.ToTable("users"));
         builder.Entity<IdentityRole<Guid>>(entity => entity.ToTable("roles"));
         builder.Entity<IdentityUserRole<Guid>>(entity => entity.ToTable("user_roles"));
@@ -40,6 +41,25 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
         builder.Entity<IdentityUserClaim<Guid>>(entity => entity.ToTable("user_claims"));
         builder.Entity<IdentityUserLogin<Guid>>(entity => entity.ToTable("user_logins"));
         builder.Entity<IdentityUserToken<Guid>>(entity => entity.ToTable("user_tokens"));
+
+        // 3. Appliquer le reste de tes configurations (Fluent API)
+        builder.ApplyConfigurationsFromAssembly(typeof(MainDbContext).Assembly);
+
+        // 4. Boucle pour forcer le snake_case sur le reste
+        foreach (var entity in builder.Model.GetEntityTypes())
+        {
+            // On ne renomme que si la table n'a pas encore de nom spécifique
+            var tableName = entity.GetTableName();
+            if (tableName != null && !tableName.StartsWith("asp_net_")) 
+            {
+                entity.SetTableName(ToSnakeCase(tableName));
+            }
+
+            foreach (var property in entity.GetProperties())
+            {
+                property.SetColumnName(ToSnakeCase(property.GetColumnName()));
+            }
+        }
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -59,5 +79,11 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             }
         }
         return base.SaveChangesAsync(cancellationToken);
+    }
+
+    // Fonction utilitaire pour convertir CamelCase en snake_case
+    private string ToSnakeCase(string str)
+    {
+        return string.Concat(str.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x : x.ToString())).ToLower();
     }
 }

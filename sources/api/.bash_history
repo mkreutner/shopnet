@@ -63,3 +63,19 @@ dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh
 # Commande pour créer le super-admin
 dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
 dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+dotnet ef migrations add AddProductsAndStocks -o Data/Migrations
+dotnet ef database update
+dotnet ef migrations add InitialSnakeCaseSchema -o Data/Migrations
+dotnet ef database update
+dotnet ef migrations add InitialSchemaSnakeCase -o Data/Migrations
+dotnet ef database update
+dotnet ef migrations add InitialSchemaSnakeCase -o Data/Migrations
+dotnet ef database update
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+dotnet ef migrations add AddInventorySystem -o Data/Migrations
+dotnet ef database update
+dotnet ef migrations add InitialSchema -o Data/Migrations
+dotnet ef database update
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+dotnet ef migrations add InitialSchema -o Data/Migrations
+dotnet ef database update
