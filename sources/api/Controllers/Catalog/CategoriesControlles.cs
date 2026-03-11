@@ -4,19 +4,15 @@ using Microsoft.EntityFrameworkCore;
 using ShopNetApi.Data;
 using ShopNetApi.Models.Dtos;
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Controllers;
 
-namespace ShopNetApi.Controllers;
+namespace ShopNetApi.Controllers.Catalog;
 
 [ApiController]
 [Route("[controller]")]
-public class CategoriesController : ControllerBase
+public class CategoriesController : BaseController
 {
-    private readonly MainDbContext _context;
-
-    public CategoriesController(MainDbContext context)
-    {
-        _context = context;
-    }
+    public CategoriesController(MainDbContext context) : base(context) { }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetCategories()

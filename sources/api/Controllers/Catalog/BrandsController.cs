@@ -4,20 +4,17 @@ using Microsoft.EntityFrameworkCore;
 using ShopNetApi.Data;
 using ShopNetApi.Models.Dtos;
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Controllers;
 
-namespace ShopNetApi.Controllers;
+namespace ShopNetApi.Controllers.Catalog;
 
 [ApiController]
 [Route("[controller]")]
-public class BrandsController : ControllerBase
+public class BrandsController : BaseController
 {
-    private readonly MainDbContext _context;
 
-    public BrandsController(MainDbContext context)
-    {
-        _context = context;
-    }
-
+    public BrandsController(MainDbContext context) : base(context) { }
+    
     [HttpGet]
     public async Task<ActionResult<IEnumerable<BrandResponseDto>>> GetBrands()
     {

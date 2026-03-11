@@ -13,6 +13,7 @@ public class Supplier : BaseEntity
     public string VatNumber { get; set; } = string.Empty;
     
     // Relations
-    public virtual ICollection<SupplierWarehouse> SupplierWarehouses { get; set; } = new List<SupplierWarehouse>();
     public virtual ICollection<Contact> Contacts { get; set; } = new List<Contact>();
+    public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
+    public virtual ICollection<SupplierWarehouse> SupplierWarehouses { get; set; } = new List<SupplierWarehouse>();
 }

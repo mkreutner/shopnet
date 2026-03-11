@@ -2,16 +2,18 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Controllers;
+using ShopNetApi.Data;
 
-namespace ShopNetApi.Controllers;
+namespace ShopNetApi.Controllers.System;
 
 [ApiController]
 [Route("[controller]")]
-public class SystemController : ControllerBase
+public class SystemController : BaseController
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public SystemController(RoleManager<IdentityRole<Guid>> roleManager)
+    public SystemController(RoleManager<IdentityRole<Guid>> roleManager, MainDbContext context) : base(context)
     {
         _roleManager = roleManager;
     }

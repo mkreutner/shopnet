@@ -2,9 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ShopNetApi.Models.Entities;
-using ShopNetApi.Models.Enums;
-using ShopNetApi.Models.Common;
 using ShopNetApi.Interfaces;
+using ShopNetApi.Models.Common;
 
 namespace ShopNetApi.Data;
 
@@ -12,18 +11,36 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public MainDbContext(DbContextOptions<MainDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options) { 
+    public MainDbContext(DbContextOptions<MainDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options) 
+    { 
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public DbSet<Brand> Brands { get; set; }
-    public DbSet<Category> Categories { get; set; }
-    public DbSet<Tva> Tvas { get; set; }
-    public DbSet<Address> Addresses { get; set; }
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Tva> Tvas => Set<Tva>();
+    public DbSet<Address> Addresses => Set<Address>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<SupplierWarehouse> SupplierWarehouses => Set<SupplierWarehouse>();
     public DbSet<Contact> Contacts => Set<Contact>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        // 1. Applique automatiquement toutes les configurations dans le dossier Data/Configurations
+        builder.ApplyConfigurationsFromAssembly(typeof(MainDbContext).Assembly);
+
+        // 2. Configurations Identity spécifiques
+        builder.Entity<ApplicationUser>(entity => entity.ToTable("users"));
+        builder.Entity<IdentityRole<Guid>>(entity => entity.ToTable("roles"));
+        builder.Entity<IdentityUserRole<Guid>>(entity => entity.ToTable("user_roles"));
+        builder.Entity<IdentityRoleClaim<Guid>>(entity => entity.ToTable("role_claims"));
+        builder.Entity<IdentityUserClaim<Guid>>(entity => entity.ToTable("user_claims"));
+        builder.Entity<IdentityUserLogin<Guid>>(entity => entity.ToTable("user_logins"));
+        builder.Entity<IdentityUserToken<Guid>>(entity => entity.ToTable("user_tokens"));
+    }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -42,29 +59,5 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             }
         }
         return base.SaveChangesAsync(cancellationToken);
-    }
-
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        base.OnModelCreating(builder);
-
-        builder.Entity<ApplicationUser>(entity => entity.ToTable("users"));
-        builder.Entity<IdentityRole<Guid>>(entity => entity.ToTable("roles"));
-        // Ajout pour renommer les tables de jointure
-        builder.Entity<IdentityUserRole<Guid>>(entity => entity.ToTable("user_roles"));
-        builder.Entity<IdentityRoleClaim<Guid>>(entity => entity.ToTable("role_claims"));
-        builder.Entity<IdentityUserClaim<Guid>>(entity => entity.ToTable("user_claims"));
-        builder.Entity<IdentityUserLogin<Guid>>(entity => entity.ToTable("user_logins"));
-        builder.Entity<IdentityUserToken<Guid>>(entity => entity.ToTable("user_tokens"));
-        builder.Entity<SupplierWarehouse>()
-            .HasKey(sw => new { sw.SupplierId, sw.WarehouseId });
-        builder.Entity<SupplierWarehouse>()
-            .HasOne(sw => sw.Supplier)
-            .WithMany(s => s.SupplierWarehouses)
-            .HasForeignKey(sw => sw.SupplierId);
-        builder.Entity<SupplierWarehouse>()
-            .HasOne(sw => sw.Warehouse)
-            .WithMany(w => w.SupplierWarehouses)
-            .HasForeignKey(sw => sw.WarehouseId);
     }
 }

@@ -197,6 +197,8 @@ namespace ShopNetApi.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SupplierId");
+
                     b.ToTable("Addresses");
                 });
 
@@ -430,7 +432,7 @@ namespace ShopNetApi.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("suppliers", (string)null);
                 });
 
             modelBuilder.Entity("ShopNetApi.Models.Entities.SupplierWarehouse", b =>
@@ -567,6 +569,14 @@ namespace ShopNetApi.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ShopNetApi.Models.Entities.Address", b =>
+                {
+                    b.HasOne("ShopNetApi.Models.Entities.Supplier", null)
+                        .WithMany("Addresses")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
             modelBuilder.Entity("ShopNetApi.Models.Entities.Category", b =>
                 {
                     b.HasOne("ShopNetApi.Models.Entities.Category", "ParentCategory")
@@ -622,6 +632,8 @@ namespace ShopNetApi.Data.Migrations
 
             modelBuilder.Entity("ShopNetApi.Models.Entities.Supplier", b =>
                 {
+                    b.Navigation("Addresses");
+
                     b.Navigation("Contacts");
 
                     b.Navigation("SupplierWarehouses");

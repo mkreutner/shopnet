@@ -2,17 +2,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ShopNetApi.Models.Entities;
 using ShopNetApi.Services;
+using ShopNetApi.Controllers;
+using ShopNetApi.Data;
 
-namespace ShopNetApi.Controllers;
+namespace ShopNetApi.Controllers.Security;
 
 [ApiController]
 [Route("[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ITokenService _tokenService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, ITokenService tokenService)
+    public AuthController(UserManager<ApplicationUser> userManager, ITokenService tokenService, MainDbContext context) : base(context)
     {
         _userManager = userManager;
         _tokenService = tokenService;

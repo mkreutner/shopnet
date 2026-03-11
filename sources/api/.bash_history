@@ -27,3 +27,39 @@ dotnet ef migrations add AddCategoriesTable
 dotnet ef database update
 dotnet ef migrations add AddSupplierAndWarehouse
 dotnet ef migrations remove
+dotnet ef migrations add AddSupplierAndWarehouse
+dotnet ef database update
+dotnet ef migrations add InitPartnersAndInventory
+dotnet ef database update
+dotnet ef migrations add UpdateSuppliers
+dotnet ef database update
+dotnet ef migrations add RefactorConfiguration
+dotnet ef database update
+dotnet ef database update
+dotnet ef migrations add InitSchemaRefactor
+dotnet ef database update
+dotnet ef database update
+dotnet ef migrations remove
+dotnet ef database update
+dotnet ef migrations add InitSchemaRefactor
+dotnet ef database update
+dotnet ef database update
+dotnet ef migrations add InitSchemaRefactor
+dotnet ef migrations add InitSchemaRefactor
+rm -rf Migrations/
+dotnet ef migrations add InitSchemaRefactor
+dotnet ef migrations remove
+rm -rf Migrations/
+dotnet ef migrations add InitSchemaRefactor
+dotnet ef migrations remove
+dotnet ef migrations add InitialSchema --output-dir Data/Migrations --context MainDbContext
+dotnet ef database update
+dotnet run -- --ensure-roles roles=Administrator,Sale,Customer,IT,Logistic,Communication,TechnicalAdvice,Billing,SAV,UsedAndRefurbish,Inventory,User
+```shell
+# Commande pour créer le super-admin
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+
+```shell
+# Commande pour créer le super-admin
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
