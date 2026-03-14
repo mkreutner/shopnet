@@ -207,6 +207,7 @@ echo ""
 echo "+----------------------------------------------------------------------------------------"
 echo ":--- 14. Sortie de Stock (POST /StockMovements - OUT)"
 echo "+----------------------------------------------------------------------------------------"
+echo "On retire 20 articles ($PRODUCT_ID) du stock du dépôt ($WAREHOUSE_ID)"
 # On sort 20 unités
 curl -i -X POST "$API_URL/StockMovements" \
      -H "Content-Type: application/json" \
@@ -225,4 +226,21 @@ echo ":--- 15. Vérification Stock Final après Sortie (GET /InventoryStatus/{id
 echo "+----------------------------------------------------------------------------------------"
 # Le résultat devrait être 50 - 20 = 30
 curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/InventoryStatus/$PRODUCT_ID"
+echo ""
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 16. Sortie de Stock avec stock insuffisant (POST /StockMovements - OUT)"
+echo "+----------------------------------------------------------------------------------------"
+echo "On retire 200 articles ($PRODUCT_ID) du stock du dépôt ($WAREHOUSE_ID)"
+curl -i -X POST "$API_URL/StockMovements" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+       \"productId\": \"$PRODUCT_ID\",
+       \"warehouseId\": \"$WAREHOUSE_ID\",
+       \"quantityChange\": -200,
+       \"movement\": \"OUT\",
+       \"reason\": \"Vente massive\"
+     }"
 echo ""
