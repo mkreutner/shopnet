@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using ShopNetApi.Models.Common;
 using ShopNetApi.Models.Enums;
 
@@ -22,13 +24,19 @@ public class Product : BaseEntity
     
     // Relations
     public Guid BrandId { get; set; }
-    public Brand Brand { get; set; } = null!;
+    [ValidateNever]
+    [JsonIgnore]
+    public Brand? Brand { get; set; }
     
     public Guid CategoryId { get; set; }
-    public Category Category { get; set; } = null!;
+    [ValidateNever]
+    [JsonIgnore]
+    public Category? Category { get; set; }
     
     public Guid SupplierId { get; set; }
-    public Supplier Supplier { get; set; } = null!;
+    [ValidateNever]
+    [JsonIgnore]
+    public Supplier? Supplier { get; set; }
 
     // Navigation
     public ICollection<ProductStock> Stocks { get; set; } = new List<ProductStock>();

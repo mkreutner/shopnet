@@ -23,10 +23,10 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<SupplierWarehouse> SupplierWarehouses => Set<SupplierWarehouse>();
     public DbSet<Contact> Contacts => Set<Contact>();
-    public DbSet<Product> Products { get; set; }
-    public DbSet<ProductStock> ProductStocks { get; set; }
-    public DbSet<Warehouse> Warehouses { get; set; }
-    public DbSet<StockMovement> StockMovements { get; set; }
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductStock> ProductStocks => Set<ProductStock>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -44,6 +44,16 @@ public class MainDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
 
         // 3. Appliquer le reste de tes configurations (Fluent API)
         builder.ApplyConfigurationsFromAssembly(typeof(MainDbContext).Assembly);
+
+        // 4. Correction spécifique pour l'entrepôt
+        builder.Entity<Warehouse>()
+            .HasOne(w => w.Address)
+            .WithMany()
+            .HasForeignKey(w => w.AddressId)
+            .IsRequired(false); // <--- L'adresse devient optionnelle en BDD
+        builder.Entity<StockMovement>()
+            .Property(s => s.Type)
+            .HasConversion<string>(); // Sauvegarde l'Enum en tant que texte en BDD
 
         // 4. Boucle pour forcer le snake_case sur le reste
         foreach (var entity in builder.Model.GetEntityTypes())

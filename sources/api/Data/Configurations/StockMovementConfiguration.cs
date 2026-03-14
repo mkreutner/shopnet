@@ -21,7 +21,7 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
             .HasForeignKey(sm => sm.WarehouseId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(sm => sm.MovementType).IsRequired().HasMaxLength(20);
+        builder.Property(sm => sm.Type).IsRequired().HasMaxLength(20).HasConversion<string>();
         builder.Property(sm => sm.QuantityChange).IsRequired();
     }
 }

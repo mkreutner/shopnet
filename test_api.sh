@@ -5,14 +5,22 @@ API_URL="https://mkdevs.eu.ngrok.io/api"
 USERNAME="admin"
 PASSWORD="@dm1nSh0pN3t#"
 
-echo ""
 echo "+----------------------------------------------------------------------------------------"
-echo ":--- 0. Nettoyage complet des tables métier"
+echo ":--- 0. Nettoyage complet des tables métier (en snake_case)"
 echo "+----------------------------------------------------------------------------------------"
-# Ajout des tables suppliers, contacts, etc. au nettoyage
 docker compose exec -t postgres bash -c \
      'PGPASSWORD="sh0pn€7!" psql -U shopnet -d shopnet -c \
-     "TRUNCATE TABLE \"Categories\", \"Brands\", \"Addresses\", \"Contacts\", \"suppliers\" RESTART IDENTITY CASCADE;"'
+     "TRUNCATE TABLE 
+        categories, 
+        brands, 
+        addresses, 
+        contacts, 
+        suppliers, 
+        products, 
+        warehouses, 
+        stock_movements, 
+        product_stocks 
+      RESTART IDENTITY CASCADE;"'
 
 echo ""
 echo "+----------------------------------------------------------------------------------------"
@@ -135,7 +143,86 @@ echo ""
 echo "+----------------------------------------------------------------------------------------"
 echo ":--- 9. Test Delete Fournisseur (DELETE /Suppliers/{id})"
 echo "+----------------------------------------------------------------------------------------"
-curl -i -X DELETE "$API_URL/Suppliers/$SUPPLIER_ID" \
-     -H "Authorization: Bearer $TOKEN"
+# curl -i -X DELETE "$API_URL/Suppliers/$SUPPLIER_ID" \
+#      -H "Authorization: Bearer $TOKEN"
 
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 10. Création Produit (POST /Products)"
+echo "+----------------------------------------------------------------------------------------"
+BRAND_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/Brands" | jq -r '.[0].id')
+CAT_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/Categories" | jq -r '.[0].id')
+SUPP_ID=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/Suppliers" | jq -r '.[0].id')
 
+PRODUCT_RESPONSE=$(curl -s -X POST "$API_URL/Products" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+       \"name\": \"Test Product\",
+       \"sku\": \"TEST-001\",
+       \"purchasePrice\": 100.0,
+       \"brandId\": \"$BRAND_ID\",
+       \"categoryId\": \"$CAT_ID\",
+       \"supplierId\": \"$SUPP_ID\"
+     }")
+
+PRODUCT_ID=$(echo "$PRODUCT_RESPONSE" | jq -r '.id // empty')
+echo "✅ Produit créé : $PRODUCT_ID"
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 11. Création Entrepôt (POST /Warehouses)"
+echo "+----------------------------------------------------------------------------------------"
+WAREHOUSE_RESPONSE=$(curl -s -X POST "$API_URL/Warehouses" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d '{"name": "Dépôt Metz", "type": 0}')
+
+WAREHOUSE_ID=$(echo "$WAREHOUSE_RESPONSE" | jq -r '.id // empty')
+echo "✅ Entrepôt créé : $WAREHOUSE_ID"
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 12. Mouvement de Stock (POST /StockMovements)"
+echo "+----------------------------------------------------------------------------------------"
+curl -i -X POST "$API_URL/StockMovements" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+       \"productId\": \"$PRODUCT_ID\",
+       \"warehouseId\": \"$WAREHOUSE_ID\",
+       \"quantityChange\": 50,
+       \"movementType\": \"IN\",
+       \"reason\": \"Arrivage initial\"
+     }"
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 13. Vérification Stock Final (GET /InventoryStatus/{id})"
+echo "+----------------------------------------------------------------------------------------"
+curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/InventoryStatus/$PRODUCT_ID"
+echo ""
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 14. Sortie de Stock (POST /StockMovements - OUT)"
+echo "+----------------------------------------------------------------------------------------"
+# On sort 20 unités
+curl -i -X POST "$API_URL/StockMovements" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+       \"productId\": \"$PRODUCT_ID\",
+       \"warehouseId\": \"$WAREHOUSE_ID\",
+       \"quantityChange\": -20,
+       \"movement\": \"OUT\",
+       \"reason\": \"Vente client #001\"
+     }"
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 15. Vérification Stock Final après Sortie (GET /InventoryStatus/{id})"
+echo "+----------------------------------------------------------------------------------------"
+# Le résultat devrait être 50 - 20 = 30
+curl -s -H "Authorization: Bearer $TOKEN" "$API_URL/InventoryStatus/$PRODUCT_ID"
+echo ""

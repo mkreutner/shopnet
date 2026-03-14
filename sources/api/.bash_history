@@ -79,3 +79,16 @@ dotnet ef database update
 dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
 dotnet ef migrations add InitialSchema -o Data/Migrations
 dotnet ef database update
+dotnet ef migrations add InitialSchema -o Data/Migrations
+dotnet ef migrations add InitialSchema -o Data/Migrations
+dotnet ef database update
+dotnet run -- --create-user username=admin email=admin@shop.net password=@dm1nSh0pN3t# roles=Administrator,IT
+dotnet ef migrations add FixWarehouseAddressOptional
+dotnet ef database
+dotnet ef database update
+dotnet ef migrations add FinalSync
+dotnet ef database update
+dotnet ef migrations add UseEnumForMovement
+dotnet ef migrations remove
+dotnet ef migrations add FixMovementTypeToEnum
+dotnet ef database update
