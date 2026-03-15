@@ -12,7 +12,8 @@ public class SupplierWarehouseConfiguration : IEntityTypeConfiguration<SupplierW
 
         builder.HasOne(sw => sw.Supplier)
                .WithMany(s => s.SupplierWarehouses)
-               .HasForeignKey(sw => sw.SupplierId);
+               .HasForeignKey(sw => sw.SupplierId)
+               .IsRequired(false);
 
         builder.HasOne(sw => sw.Warehouse)
                .WithMany(w => w.SupplierWarehouses)

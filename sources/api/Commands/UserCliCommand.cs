@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore; // Nécessaire pour .MigrateAsync()
 using ShopNetApi.Models.Entities;
+using ShopNetApi.Data;
 
 namespace ShopNetApi.Commands;
 
@@ -15,8 +17,29 @@ public static class UserCliCommand
                        .Select(a => a.Split('=', 2))
                        .ToDictionary(s => s[0].ToLower(), s => s[1]);
 
-        // Ajout d'une commande pour créer/vérifier les rôles
-        if (args.Contains("--ensure-roles"))
+
+        if (args.Contains("--reset-db"))
+        {
+            var context = serviceProvider.GetRequiredService<MainDbContext>();
+            
+            // Au lieu de supprimer toute la DATABASE, on nettoie le contenu
+            // Cela évite l'erreur de connexion Postgres
+            var tableNames = context.Model.GetEntityTypes()
+                .Select(t => t.GetTableName())
+                .Where(name => name != "__EFMigrationsHistory")
+                .Distinct()
+                .ToList();
+
+            foreach (var tableName in tableNames)
+            {
+                var sql = string.Format("TRUNCATE TABLE \"{0}\" RESTART IDENTITY CASCADE;", tableName);
+    
+                await context.Database.ExecuteSqlRawAsync(sql);
+            }
+            
+            Console.WriteLine("✅ L'ensemble des tables réinitialisées avec succés.");
+        } 
+        else if (args.Contains("--ensure-roles"))
         {
             var rolesInput = dict.GetValueOrDefault("roles", "");
             var roles = rolesInput.Split(',').Select(r => r.Trim()).Where(r => !string.IsNullOrEmpty(r));
@@ -33,16 +56,14 @@ public static class UserCliCommand
                     Console.WriteLine($"ℹ️ Rôle '{roleName}' existe déjà.");
                 }
             }
-            return; // On arrête après avoir garanti les rôles
         }
-
-        if (args.Contains("--create-user")) 
+        else if (args.Contains("--create-user")) 
         {
             var user = new ApplicationUser {
-                UserName = dict.GetValueOrDefault("username", "user"),
-                Email = dict.GetValueOrDefault("email"),
-                FirstName = dict.GetValueOrDefault("firstname", ""),
-                LastName = dict.GetValueOrDefault("lastname", ""),
+                UserName = dict.GetValueOrDefault("username", "unknown-user"),
+                Email = dict.GetValueOrDefault("email", "no-email@missing.tld"),
+                FirstName = dict.GetValueOrDefault("firstname", "Unknown"),
+                LastName = dict.GetValueOrDefault("lastname", "User"),
                 EmailConfirmed = true
             };
             

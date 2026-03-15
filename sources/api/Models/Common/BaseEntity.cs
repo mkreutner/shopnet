@@ -9,4 +9,5 @@ public abstract class BaseEntity : IAuditable
     public string? CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
+    public bool IsDeleted { get; set; } = false;    // Soft delete - initially not deleted :p
 }

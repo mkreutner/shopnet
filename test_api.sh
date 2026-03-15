@@ -6,21 +6,21 @@ USERNAME="admin"
 PASSWORD="@dm1nSh0pN3t#"
 
 echo "+----------------------------------------------------------------------------------------"
-echo ":--- 0. Nettoyage complet des tables métier (en snake_case)"
+echo ":--- 0. Reset complet, rôles et Admin"
 echo "+----------------------------------------------------------------------------------------"
-docker compose exec -t postgres bash -c \
-     'PGPASSWORD="sh0pn€7!" psql -U shopnet -d shopnet -c \
-     "TRUNCATE TABLE 
-        categories, 
-        brands, 
-        addresses, 
-        contacts, 
-        suppliers, 
-        products, 
-        warehouses, 
-        stock_movements, 
-        product_stocks 
-      RESTART IDENTITY CASCADE;"'
+# Nettoyage total et préparation du système
+docker compose exec -t api sh -c "dotnet run -- --reset-db" 
+docker compose exec -t api sh -c "dotnet run -- --ensure-roles roles=Administrator,Sale,Customer,IT,Logistic,Communication,TechnicalAdvice,Billing,SAV,UsedAndRefurbish,Inventory,User"
+docker compose exec -t api sh -c "dotnet run -- --create-user username=$USERNAME email=$USERNAME@shop.net password=$PASSWORD roles=Administrator,IT"
+
+echo "✅ Environnement prêt, base vierge et Admin configuré."
+
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+echo ">> LANCEMENT DES TESTS D'APPELS A L'API ..."
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ""
+
 
 echo ""
 echo "+----------------------------------------------------------------------------------------"
@@ -243,4 +243,126 @@ curl -i -X POST "$API_URL/StockMovements" \
        \"movement\": \"OUT\",
        \"reason\": \"Vente massive\"
      }"
+
+echo ""
+echo "+----------------------------------------------------------------------------------------"
+echo ":--- 17. Gestion des employés (POST /users/employees)"
+echo "+----------------------------------------------------------------------------------------"
+echo ": 17.1 - Création du manager (Marc LeManager)"
+OLD_MANAGER_RESPONSE=$(curl -s -X POST "$API_URL/users/employees" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+           \"email\": \"marc@entreprise.com\",
+           \"password\": \"Password123!\",
+           \"firstName\": \"Marc\",
+           \"lastName\": \"LeManager\",
+           \"service\": \"Logistique\",
+           \"managerId\": null
+         }")
+OLD_MANAGER_ID=$(echo "$OLD_MANAGER_RESPONSE" | jq -r '.userId // empty')
+if [ -z "$OLD_MANAGER_ID" ]; then
+    echo "❌ Erreur : Impossible de créer le manager."
+    echo "Réponse : $OLD_MANAGER_RESPONSE"
+    exit 1
+fi
+echo "✅ Manager créé avec succès. ID : $OLD_MANAGER_ID"
+sleep 1
+echo ""
+echo ": 17.2 - Création d'un employée (Jonathan LePlouk)"
+USER_RESPONSE_01=$(curl -s -X POST "$API_URL/users/employees" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+           \"email\": \"jonathan@entreprise.com\",
+           \"password\": \"Password123!\",
+           \"firstName\": \"Jonathan\",
+           \"lastName\": \"LePlouk\",
+           \"service\": \"Logistique\",
+           \"managerId\": \"$OLD_MANAGER_ID\"
+         }")
+USER_ID_01=$(echo "$USER_RESPONSE_01" | jq -r '.userId // empty')
+if [ -z "$USER_ID_01" ]; then
+    echo "❌ Erreur : Impossible de créer l'utilisateur."
+    echo "Réponse : $USER_RESPONSE_01"
+    exit 1
+fi
+echo "✅ Utilisateur créé avec succès. ID : $USER_ID_01"
+sleep 1
+echo ""
+echo ": 17.3 - Création d'un second employée (Paul Hille)"
+USER_RESPONSE_02=$(curl -s -X POST "$API_URL/users/employees" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+           \"email\": \"paul@entreprise.com\",
+           \"password\": \"Password123!\",
+           \"firstName\": \"Paul\",
+           \"lastName\": \"Hille\",
+           \"service\": \"Logistique\",
+           \"managerId\": \"$OLD_MANAGER_ID\"
+         }")
+USER_ID_02=$(echo "$USER_RESPONSE_02" | jq -r '.userId // empty')
+if [ -z "$USER_ID_02" ]; then
+    echo "❌ Erreur : Impossible de créer l'utilisateur."
+    echo "Réponse : $USER_RESPONSE_02"
+    exit 1
+fi
+echo "✅ Utilisateur créé avec succès. ID : $USER_ID_02"
+sleep 1
+echo ""
+echo ": 17.4 - Promotion de Paul Hille (PATCH /users/employees)"
+echo ":        Paul devient manager et n'a plus de supérieur."
+PROMOTION_RESPONSE=$(curl -s -X PATCH "$API_URL/users/employees/$USER_ID_02" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+           \"managerId\": null
+         }")
+if echo "$PROMOTION_RESPONSE" | grep -q "error"; then
+    echo "❌ Erreur lors de la promotion de Paul."
+    echo "Réponse : $PROMOTION_RESPONSE"
+else
+    echo "✅ Paul Hille est maintenant promu (ManagerId: null)."
+fi
+sleep 1
+echo ""
+echo ": 17.5 - Départ de Marc LeManager (DELETE /users/employees)"
+DELETE_RESPONSE=$(curl -s -I -X DELETE "$API_URL/users/employees/$OLD_MANAGER_ID" \
+     -H "Authorization: Bearer $TOKEN")
+echo "✅ Marc LeManager a été supprimé (Soft Delete)."
+echo ""
+sleep 1
+echo ": 17.6 - Réassignement de Jonathan (PATCH /users/employees)"
+echo ":        Jonathan LePlouk est réassigné sous les ordres de Paul Hille."
+REASSIGN_RESPONSE=$(curl -s -X PATCH "$API_URL/users/employees/$USER_ID_01" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d "{
+           \"managerId\": \"$USER_ID_02\"
+         }")
+NEW_MANAGER_CHECK=$(echo "$REASSIGN_RESPONSE" | jq -r '.newManagerId // empty')
+if [ "$NEW_MANAGER_CHECK" == "$USER_ID_02" ]; then
+    echo "✅ Jonathan est maintenant supervisé par Paul Hille ($USER_ID_02)."
+else
+    echo "❌ Erreur : Le réassignement a échoué."
+    echo "Réponse API : $REASSIGN_RESPONSE"
+    exit 1
+fi
+echo ""
+sleep 1
+echo ": 17.7 - Vérification finale de l'état de Jonathan"
+FINAL_CHECK_RESPONSE=$(curl -s -X GET "$API_URL/users/employees/$USER_ID_01" \
+     -H "Authorization: Bearer $TOKEN")
+FINAL_CHECK_MANAGER_ID=$(echo "$FINAL_CHECK_RESPONSE" | jq -r '.managerId // empty')
+if [ "$FINAL_CHECK_MANAGER_ID" == "$USER_ID_02" ]; then
+    echo "✅ Validation confirmée en base : Jonathan a bien Paul pour manager."
+else
+    echo "❌ Oups, l'affichage ne correspond pas à l'enregistrement."
+    echo "Réponse API : $FINAL_CHECK_RESPONSE"
+fi
+echo ""
+sleep 1
+
+
 echo ""

@@ -92,3 +92,10 @@ dotnet ef migrations add UseEnumForMovement
 dotnet ef migrations remove
 dotnet ef migrations add FixMovementTypeToEnum
 dotnet ef database update
+dotnet ef migrations add AddUserProfilesAndEmployeeEntities
+dotnet ef database update
+dotnet ef migrations add AddSoftDeleteSupport
+dotnet ef database update
+dotnet ef migrations remove
+dotnet ef migrations add AddSoftDeleteSupport
+dotnet ef database update

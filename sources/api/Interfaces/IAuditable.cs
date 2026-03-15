@@ -6,4 +6,5 @@ public interface IAuditable
     string? CreatedBy { get; set; }
     DateTime? UpdatedAt { get; set; }
     string? UpdatedBy { get; set; }
+    bool IsDeleted { get; set; }        // Soft delete for all entities
 }
